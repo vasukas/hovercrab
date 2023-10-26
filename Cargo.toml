@@ -1,0 +1,77 @@
+[package]
+name = "hovercrab"
+version = "0.0.1"
+edition = "2021"
+
+[features]
+default = ["dev_build"]
+dev_build = ["bevy/dynamic_linking"]
+wayland = ["bevy/wayland"]
+
+# bevy's tracing won't work since this crate uses custom logging
+trace_tracy = ["trace", "tracing-tracy", "bevy/trace_tracy"]
+trace = ["tracing-error"] 
+
+[dependencies]
+bevy = { version = "0.11", default-features = false, features = [
+    "bevy_animation",
+    "bevy_asset",
+    "bevy_audio",
+    "bevy_core_pipeline",
+    "bevy_gizmos",
+    "bevy_gltf",
+    "bevy_pbr",
+    "bevy_render",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_winit",
+
+    "default_font",
+    "multi-threaded",
+
+    "jpeg",
+    "png",
+    "vorbis",
+    "wav",
+
+    "x11",
+
+    # needed only for tonemapping
+    "tonemapping_luts", "ktx2", "zstd",
+]}
+bevy_egui = { version = "0.22", default-features = false, features = ["default_fonts"] }
+# TODO: pre-generate all mipmaps
+bevy_mod_mipmap_generator = { git = "https://github.com/DGriffin91/bevy_mod_mipmap_generator", rev = "234adf1" }
+bevy_rapier3d = { version = "0.22", features = ["debug-render-3d"] }
+leafwing-input-manager = { version = "0.10", default-features = false }
+
+itertools = "0.10"
+rand = "0.8"
+
+ron = "0.8"
+serde = { version = "1", features = ["derive"] }
+
+# for logging
+chrono = "0.4"
+lazy_static = "1.4"
+
+# for logging: same versions as used by bevy
+crossbeam-channel = "0.5"
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
+tracing-tracy = { version = "0.10", optional = true }
+tracing-log = "0.1"
+tracing-error = { version = "0.2", optional = true }
+
+# for tests only
+[dev-dependencies]
+approx = "0.5"
+glam = { version = "0.24", features = ["approx"] } # same version as used by bevy
+
+# Optimize this crate a bit in debug mode
+[profile.dev]
+opt-level = 1
+
+# Fully optimize dependencies in debug mode
+[profile.dev.package."*"]
+opt-level = 3
