@@ -25,7 +25,7 @@ struct SkyboxResource {
 }
 
 fn load_skybox(mut skybox: ResMut<SkyboxResource>, asset_server: Res<AssetServer>) {
-    let skybox_file = "skybox.png"; // TODO: use real one
+    let skybox_file = "textures/skybox.png"; // TODO: read from settings
 
     skybox.image = asset_server.load(skybox_file);
 }

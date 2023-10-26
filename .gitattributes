@@ -1,0 +1,13 @@
+/project/**/*.blend filter=lfs diff=lfs merge=lfs -text
+/project/**/*.kra filter=lfs diff=lfs merge=lfs -text
+
+/project/**/*.glb filter=lfs diff=lfs merge=lfs -text
+/project/**/*.gltf filter=lfs diff=lfs merge=lfs -text
+/project/**/*.bin filter=lfs diff=lfs merge=lfs -text
+
+/project/**/*.png filter=lfs diff=lfs merge=lfs -text
+/project/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+/project/**/*.jpeg filter=lfs diff=lfs merge=lfs -text
+
+/assets/sounds/**/*.ogg filter=lfs diff=lfs merge=lfs -text
+/assets/sounds/**/*.wav filter=lfs diff=lfs merge=lfs -text
