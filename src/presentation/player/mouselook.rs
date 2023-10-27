@@ -6,6 +6,8 @@ use bevy::{
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
+use crate::utils::math_algorithms;
+
 /// Apply mouse movement in primary window to [`Transform::rotation`] of this
 /// entity.
 ///
@@ -44,6 +46,8 @@ impl Default for MouselookSettings {
 pub struct OrbitCamera {
     pub target: Option<Entity>,
     pub distance: f32,
+    /// relative to horizontal rotation
+    pub offset: Vec3,
 }
 
 /// Controls controls
@@ -162,13 +166,18 @@ fn orbit_camera(
     targets: Query<&GlobalTransform>,
 ) {
     for (mut transform, camera) in entities.iter_mut() {
-        let offset = camera
+        // TODO: interpolation, so camera is a bit delayed
+        let target_pos = camera
             .target
             .and_then(|e| targets.get(e).ok())
             .map(|t| t.translation())
             .unwrap_or_default();
 
         let rotation = transform.rotation;
+        let xz_rotation = math_algorithms::quat_component(rotation, Vec3::Y);
+
+        let offset = target_pos + xz_rotation * camera.offset;
+
         transform.translation = offset + rotation * Vec3::Z * camera.distance;
     }
 }

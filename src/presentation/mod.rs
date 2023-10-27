@@ -2,12 +2,13 @@
 
 use bevy::prelude::*;
 
+pub mod objects;
 pub mod player;
 
 pub struct PresentationPlugin;
 
 impl Plugin for PresentationPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((player::PlayerPlugin,));
+        app.add_plugins((player::PlayerPlugin, objects::ObjectsPlugin));
     }
 }

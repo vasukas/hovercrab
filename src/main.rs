@@ -31,7 +31,7 @@ fn main() {
             },
             RapierPhysicsPlugin::<()>::default(),
             RapierDebugRenderPlugin {
-                enabled: false,
+                enabled: true,
                 ..default()
             },
             EguiPlugin,
@@ -41,7 +41,7 @@ fn main() {
             presentation::PresentationPlugin,
         ))
         .insert_resource(GizmoConfig {
-            depth_bias: -1.,
+            // depth_bias: -1.,
             ..default()
         })
         .run()
