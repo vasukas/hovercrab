@@ -61,7 +61,7 @@ fn hovercrab_input(
     mut crab: Query<&mut Hovercrab>,
     cameras: Query<&Transform>,
     keys: Res<Input<KeyCode>>,
-    buttons: Res<Input<MouseButton>>,
+    // buttons: Res<Input<MouseButton>>,
 ) {
     let Ok(mut crab) = crab.get_single_mut() else {
         return
@@ -135,7 +135,7 @@ fn update_hovercrab(
         // reset forces
         *ext_force = default();
 
-        // rotate
+        // rotation magic
         {
             let current_dir = (body_rotation * Vec3::NEG_Z).xz();
             let target_dir = crab.target_rotation.xz();
@@ -167,7 +167,44 @@ fn update_hovercrab(
             let ray_pos =
                 center_of_mass + body_rotation * (Vec3::new(x_dir, 0., z_dir) * ray_max_offset);
 
-            let ray_dir = transform.up();
+            // let ray_dir = Vec3::Y;
+            let ray_dir = {
+                // v.3
+
+                let max_angle = 45f32.to_radians();
+                let rotation = math_algorithms::quat_component(transform.rotation, Vec3::Y);
+
+                let fwd_rotation = Quat::from_rotation_x(crab.input_dir.z * max_angle);
+
+                let rotation = rotation * fwd_rotation;
+
+                rotation * Vec3::Y
+
+                // v.2
+
+                // let rotation = math_algorithms::quat_component(transform.rotation, Vec3::Y);
+
+                // let base = Vec3::Y;
+                // let fwd = rotation * Vec3::NEG_Z;
+                // let side = rotation * Vec3::X;
+
+                // let t = 0.25; // TODO: magic
+                // let t = if crab.input_dir.x.abs() + crab.input_dir.z.abs() > 1.9 {
+                //     t / 2.
+                // } else {
+                //     t
+                // };
+                // (base + fwd * -crab.input_dir.z * t + side * t * crab.input_dir.x).normalize()
+
+                // v.1
+
+                // let base = math_algorithms::quat_from_direction(base);
+                // let fwd = math_algorithms::quat_from_direction(fwd);
+                // let side = math_algorithms::quat_from_direction(side);
+
+                // let s = 0.5;
+                // base.slerp(fwd, s).slerp(side, s) * Vec3::Y
+            };
 
             let ray_offset = ray_margin * 0.5;
             let body_offset = -ray_dir * body_height;
@@ -180,43 +217,48 @@ fn update_hovercrab(
                 QueryFilter::default().exclude_rigid_body(body_entity),
             );
 
-            let Some((_hit_entity, hit_distance)) = ray_hit else {
-                continue
-            };
-
-            // 0 if max steering, 1 if none
-            let steer_factor = if (z_dir < -0.1 && crab.input_dir.z < -0.1)
-                || (z_dir > 0.1 && crab.input_dir.z > 0.1)
-                || (x_dir < -0.1 && crab.input_dir.x < -0.1)
-                || (x_dir > 0.1 && crab.input_dir.x > 0.1)
-            {
-                0.25
-            } else {
-                1.
-            };
-
-            // 0 if max distance, 1 if least distance
             let gravity = phy_config.gravity.y.abs();
-            let distance_factor = (ray_length - hit_distance).max(0.) / ray_length;
-            let gravity_factor = (distance_factor + 0.5).min(1.);
+            let k_force = 50.; // magic
+            let min_force = gravity;
+            let max_hover_force = 2. * gravity; // magic
 
-            let current_velocity = velocity
-                .linear_velocity_at_point(ray_pos, center_of_mass)
-                .project_onto(ray_dir)
-                .y
-                .min(0.);
-            let target_velocity = 0.;
-            let target_force =
-                (target_velocity - current_velocity) / delta_seconds + gravity * gravity_factor;
+            let mut force = min_force;
 
-            let max_force = gravity * 2. * steer_factor;
-            let force = target_force.clamp(-max_force, max_force);
+            // hover magic
+            if let Some((_hit_entity, hit_distance)) = ray_hit {
+                let distance_factor = (ray_length - hit_distance).max(0.) / ray_length;
+
+                let current_velocity = velocity
+                    .linear_velocity_at_point(ray_pos, center_of_mass)
+                    .project_onto(ray_dir)
+                    .y
+                    .min(0.);
+                let target_velocity = 0.;
+                let target_force =
+                    (target_velocity - current_velocity).max(0.) * distance_factor * k_force
+                        / delta_seconds;
+
+                force += target_force.clamp(-max_hover_force, max_hover_force);
+            }
 
             *ext_force += ExternalForce::at_point(
                 ray_dir * force * mass / ray_count,
                 ray_pos,
                 center_of_mass,
             );
+        }
+
+        // air drag force (real formula)
+        {
+            let speed = velocity.linvel.length();
+            let dir = velocity.linvel.normalize_or_zero();
+
+            let air_density = 1.225;
+            let area = CRAB_HALF_SIZE.x * CRAB_HALF_SIZE.y * 4.;
+            let drag_coeff = 0.09; // depends on object shape
+            let force = 0.5 * air_density * speed.powi(2) * area * drag_coeff;
+
+            ext_force.force -= dir * force;
         }
     }
 }
